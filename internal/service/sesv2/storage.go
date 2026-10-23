@@ -529,11 +529,19 @@ func (s *MemoryStorage) SendEmail(_ context.Context, req *SendEmailRequest) (str
 		}
 	}
 
+	if err := validateMessageTags(req.EmailTags); err != nil {
+		return "", &IdentityError{
+			Code:    errBadRequest,
+			Message: err.Error(),
+		}
+	}
+
 	sentEmail := &SentEmail{
 		MessageID:            uuid.New().String(),
 		FromEmailAddress:     req.FromEmailAddress,
 		Destination:          cloneDestination(req.Destination),
 		ConfigurationSetName: req.ConfigurationSetName,
+		EmailTags:            cloneMessageTags(req.EmailTags),
 		SentAt:               time.Now(),
 	}
 	if err := s.populateSentEmailContent(req.Content, sentEmail, hasDestination); err != nil {
@@ -618,6 +626,13 @@ func (s *MemoryStorage) validateBulkEmailRequest(req *SendBulkEmailRequest) (*Em
 		}
 	}
 
+	if err := validateMessageTags(req.DefaultEmailTags); err != nil {
+		return nil, nil, &IdentityError{
+			Code:    errBadRequest,
+			Message: err.Error(),
+		}
+	}
+
 	defaultTemplate := req.DefaultContent.Template
 
 	tmpl, err := s.resolveSendTemplate(defaultTemplate)
@@ -645,6 +660,10 @@ func buildBulkEmailEntry(req *SendBulkEmailRequest, entry *BulkEmailEntry, defau
 		}
 	}
 
+	if err := validateMessageTags(entry.ReplacementTags); err != nil {
+		return nil, BulkEmailEntryResult{Status: statusFailed, Error: err.Error()}
+	}
+
 	templateData, err := bulkTemplateData(entry, defaultTemplate)
 	if err != nil {
 		return nil, BulkEmailEntryResult{Status: statusFailed, Error: err.Error()}
@@ -655,6 +674,7 @@ func buildBulkEmailEntry(req *SendBulkEmailRequest, entry *BulkEmailEntry, defau
 		FromEmailAddress:     req.FromEmailAddress,
 		Destination:          cloneDestination(entry.Destination),
 		ConfigurationSetName: req.ConfigurationSetName,
+		EmailTags:            bulkEmailTags(req, entry),
 		SentAt:               time.Now(),
 	}
 

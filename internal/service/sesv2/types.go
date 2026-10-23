@@ -83,6 +83,7 @@ type SentEmail struct {
 	TemplateName         string       `json:"TemplateName,omitempty"`
 	TemplateData         string       `json:"TemplateData,omitempty"`
 	ConfigurationSetName string       `json:"ConfigurationSetName,omitempty"`
+	EmailTags            []MessageTag `json:"EmailTags,omitempty"`
 	SentAt               time.Time    `json:"SentAt"`
 }
 
