@@ -485,6 +485,16 @@ resolution are not supported. Rendering errors are reported synchronously as
 failed messages are not recorded. This differs from AWS's asynchronous rendering
 failure notifications.
 
+Message tags are captured as `EmailTags`: `SendEmail` records its `EmailTags`, and
+each `SendBulkEmail` entry records its `ReplacementTags` when non-empty, otherwise
+the request's `DefaultEmailTags`. AWS does not document how the two combine, so
+kumo replaces the default tags entirely rather than merging them. Tag names and
+values must be 1-256 ASCII letters, numbers, underscores, or dashes, except for the
+`ses:feedback-id-a` and `ses:feedback-id-b` names. An invalid tag fails
+`SendEmail` or `DefaultEmailTags` with `BadRequestException`, and fails an
+individual bulk entry with `FAILED` when it is in `ReplacementTags`. SES auto-tags
+such as `ses:configuration-set` are not added.
+
 ### Example: Retrieving sent emails
 
 ```bash
@@ -504,6 +514,9 @@ Response:
       },
       "Subject": "Hello",
       "Body": "Hello, World!",
+      "EmailTags": [
+        {"Name": "campaign", "Value": "welcome"}
+      ],
       "SentAt": "2025-01-01T00:00:00Z"
     }
   ]
